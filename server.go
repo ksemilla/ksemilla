@@ -47,7 +47,7 @@ func main() {
 	r.Handle("/query", srv)
 
 	test := os.Getenv("ACCESS_KEY")
-	test2 := os.Getenv("asdasd")
+	test2 := os.Getenv("AWS_ACCESS_KEY")
 	fmt.Println(test, "test", test2)
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)

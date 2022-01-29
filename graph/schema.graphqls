@@ -1,0 +1,89 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+type User {
+  id: ID!
+  email: String!
+  password: String!
+  role: String!
+}
+
+type Invoice {
+	id: String!
+	DateCreated: String!
+	From: String!
+	Address: String!
+	Amount: Float!
+}
+
+input InvoiceFilterInput {
+    id: String
+    DateCreated: String
+    From: String
+    Address: String
+    Amount: Float
+}
+
+type PaginatedInvoicesReturn {
+    data: [Invoice!]!
+    total: Int!
+}
+
+type Query {
+  invoices: [Invoice!]!
+  users: [User!]!
+  invoiceFilter(DateCreated: String!): [Invoice]
+  paginatedInvoices(Page: Int!): PaginatedInvoicesReturn!
+  getInvoice(id: String!): Invoice!
+}
+
+
+input NewInvoice {
+    DateCreated: String!
+    From: String!
+    Address: String!
+    Amount: Float!
+}
+
+input Login {
+    email: String!
+    password: String!
+}
+
+input NewUser {
+    email: String!
+    password: String!
+}
+
+input UpdateUser {
+    id: ID!
+  email: String!
+  password: String!
+  role: String!
+}
+
+input VerifyToken {
+    token: String!
+}
+
+input InvoiceInput {
+    id: String!
+    DateCreated: String!
+    From: String!
+    Address: String!
+    Amount: Float!
+}
+
+type Mutation {
+  createInvoice(input: NewInvoice!): Invoice!
+  updateInvoice(input: InvoiceInput!): Invoice!
+
+  login(input: Login!): String!
+  verifyToken(input: VerifyToken!): String!
+
+  createUser(input: NewUser!): User!
+  findUserById(input: String!): User!
+  updateUser(input: UpdateUser!): User!
+  
+}

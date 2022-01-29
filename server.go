@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -26,10 +27,11 @@ func main() {
 		port = defaultPort
 	}
 
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	godotenv.Load(filepath.Join(".", ".env"))
+	// err := godotenv.Load(filepath.Join(".", ".env"))
+	// if err != nil {
+	// 	log.Fatal("Error loading .env file")
+	// }
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)

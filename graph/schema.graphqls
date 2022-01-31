@@ -31,10 +31,9 @@ type PaginatedInvoicesReturn {
 }
 
 type Query {
-  invoices: [Invoice!]!
+  invoices(Page: Int!): PaginatedInvoicesReturn!
   users: [User!]!
   invoiceFilter(DateCreated: String!): [Invoice]
-  paginatedInvoices(Page: Int!): PaginatedInvoicesReturn!
   getInvoice(id: String!): Invoice!
 }
 
@@ -49,6 +48,11 @@ input NewInvoice {
 input Login {
     email: String!
     password: String!
+}
+
+type LoginReturn {
+    user: User!
+    token: String!
 }
 
 input NewUser {
@@ -79,8 +83,8 @@ type Mutation {
   createInvoice(input: NewInvoice!): Invoice!
   updateInvoice(input: InvoiceInput!): Invoice!
 
-  login(input: Login!): String!
-  verifyToken(input: VerifyToken!): String!
+  login(input: Login!): LoginReturn!
+  verifyToken(input: VerifyToken!): User!
 
   createUser(input: NewUser!): User!
   findUserById(input: String!): User!

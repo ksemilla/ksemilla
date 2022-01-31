@@ -23,6 +23,11 @@ type Login struct {
 	Password string `json:"password"`
 }
 
+type LoginReturn struct {
+	User  *User  `json:"user"`
+	Token string `json:"token"`
+}
+
 type PaginatedInvoicesReturn struct {
 	Data  []*Invoice `json:"data"`
 	Total int        `json:"total"`

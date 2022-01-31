@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"ksemilla/graph"
 	"ksemilla/graph/generated"
 	"ksemilla/middlewares"
@@ -45,10 +44,6 @@ func main() {
 
 	r.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	r.Handle("/query", srv)
-
-	test := os.Getenv("ACCESS_KEY")
-	test2 := os.Getenv("AWS_ACCESS_KEY")
-	fmt.Println(test, "test", test2)
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	// log.Fatal(http.ListenAndServe(":"+port, nil))

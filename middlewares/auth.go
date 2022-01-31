@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"ksemilla/config"
 	"ksemilla/database"
 	"ksemilla/graph/model"
 
@@ -23,19 +24,21 @@ func GetUserCtx() key {
 	return UserCtx
 }
 
-var db = database.Connect()
-
 func UserContextBody(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 
-		fmt.Println("AUTH", r.Header.Get("Authorization"))
+	var db = database.Connect()
+
+	config := config.Config()
+
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		authToken := r.Header.Get("Authorization")
 		userObj := model.User{}
 		if len(authToken) == 0 {
+			// IF NO TOKEN PROVIDED
 			ctx := context.WithValue(r.Context(), UserCtx, nil)
 			next.ServeHTTP(rw, r.WithContext(ctx))
 		} else {
-			token, err := jwt.Parse(authToken, func(token *jwt.Token) (interface{}, error) {
+			token, _ := jwt.Parse(authToken, func(token *jwt.Token) (interface{}, error) {
 				// Don't forget to validate the alg is what you expect:
 				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 					// return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
@@ -43,7 +46,7 @@ func UserContextBody(next http.Handler) http.Handler {
 				}
 
 				// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
-				return []byte("Jebaited"), nil
+				return []byte(config.APP_SECRET_KEY), nil
 			})
 
 			if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
@@ -57,18 +60,17 @@ func UserContextBody(next http.Handler) http.Handler {
 				} else {
 					user, err := db.FindOneUser(claims["userId"].(string))
 					if err != nil {
-						fmt.Println("auth:no user found with id")
+						fmt.Println("auth:no user found with")
 						ctx := context.WithValue(r.Context(), UserCtx, nil)
 						next.ServeHTTP(rw, r.WithContext(ctx))
 					} else {
-						// IF EVERYTHING LOOKS FINE
+						// THIS
 						userObj = *user
 						ctx := context.WithValue(r.Context(), UserCtx, userObj)
 						next.ServeHTTP(rw, r.WithContext(ctx))
 					}
 				}
 			} else {
-				fmt.Println(err)
 				// return "", errors.New("token unrecognized")
 				ctx := context.WithValue(r.Context(), UserCtx, nil)
 				next.ServeHTTP(rw, r.WithContext(ctx))

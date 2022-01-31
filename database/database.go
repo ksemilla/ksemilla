@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"ksemilla/config"
 	"ksemilla/graph/model"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -20,6 +21,10 @@ import (
 
 	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
+
+	"path/filepath"
+
+	"github.com/joho/godotenv"
 )
 
 type DB struct {
@@ -27,7 +32,11 @@ type DB struct {
 }
 
 func Connect() *DB {
-	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://myUserAdmin:asd@localhost:27017"))
+
+	godotenv.Load(filepath.Join(".", ".env"))
+	config := config.Config()
+
+	client, err := mongo.NewClient(options.Client().ApplyURI(config.MONGODB_URI))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -49,6 +58,7 @@ func (db *DB) Save(input *model.NewInvoice) *model.Invoice {
 	res, err := collection.InsertOne(ctx, input)
 	if err != nil {
 		log.Fatal(err)
+		// return &model.Invoice{}
 	}
 	return &model.Invoice{
 		ID:          res.InsertedID.(primitive.ObjectID).Hex(),
@@ -254,23 +264,30 @@ func (db *DB) FindOneUser(_id string) (*model.User, error) {
 	defer cancel()
 	user := model.User{}
 	res := collection.FindOne(ctx, bson.M{"_id": ObjectID})
-	res.Decode(&user)
+	err = res.Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, errors.New("no user found")
+		}
+	}
 	return &user, nil
 }
 
-func (db *DB) Login(input *model.Login) (string, error) {
+func (db *DB) Login(input *model.Login) (*model.LoginReturn, error) {
+
+	config := config.Config()
+
 	collection := db.client.Database("ksemilla").Collection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	var result *bson.M
 	err := collection.FindOne(ctx, bson.M{"email": input.Email}).Decode(&result)
 	if err != nil {
-		return "", errors.New("cannot find user")
+		return nil, errors.New("cannot find user")
 	}
 	user_map := *result
 	password := user_map["password"].(string)
 	match := CheckPasswordHash(input.Password, password)
-	// fmt.Println("USERID", user_map["_id"].(primitive.ObjectID).Hex())
 	_token_duration, _ := strconv.Atoi(os.Getenv("TOKEN_DURATION"))
 	if match {
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -279,14 +296,34 @@ func (db *DB) Login(input *model.Login) (string, error) {
 			"ExpiresAt": int(time.Now().Add(time.Second * time.Duration(_token_duration)).Unix()),
 			"userId":    user_map["_id"].(primitive.ObjectID).Hex(),
 		})
-		tokenString, _ := token.SignedString([]byte("Jebaited"))
-		return tokenString, nil
+		tokenString, _ := token.SignedString([]byte(config.APP_SECRET_KEY))
+
+		jsonbody, _ := json.Marshal(user_map)
+		user := model.User{}
+
+		err = json.Unmarshal(jsonbody, &user)
+		if err != nil {
+			return nil, errors.New("json unmarshal error")
+		}
+
+		// return &model.LoginReturn{
+		// 	User:  &model.User{},
+		// 	Token: tokenString,
+		// }, nil
+
+		return &model.LoginReturn{
+			User:  &user,
+			Token: tokenString,
+		}, nil
 	} else {
-		return "", errors.New("wrong credentials")
+		return nil, errors.New("wrong credentials")
 	}
 }
 
-func (db *DB) VerifyToken(input *model.VerifyToken) (string, error) {
+func (db *DB) VerifyToken(input *model.VerifyToken) (*model.User, error) {
+
+	config := config.Config()
+
 	token, err := jwt.Parse(input.Token, func(token *jwt.Token) (interface{}, error) {
 		// Don't forget to validate the alg is what you expect:
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -295,17 +332,34 @@ func (db *DB) VerifyToken(input *model.VerifyToken) (string, error) {
 		}
 
 		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
-		return []byte("Jebaited"), nil
+		return []byte(config.APP_SECRET_KEY), nil
 	})
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		timeValue := int64(claims["ExpiresAt"].(float64)) - time.Now().Unix()
 		if timeValue <= 0 {
-			return "", errors.New("expired token")
+			return nil, errors.New("expired token")
 		}
-		return "", nil
+
+		ObjectID, err := primitive.ObjectIDFromHex(claims["userId"].(string))
+		if err != nil {
+			log.Fatal(err)
+		}
+		collection := db.client.Database("ksemilla").Collection("users")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		user := model.User{}
+		res := collection.FindOne(ctx, bson.M{"_id": ObjectID})
+		err = res.Decode(&user)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				return nil, errors.New("no user found")
+			}
+		}
+
+		return &user, nil
 	} else {
 		fmt.Println(err)
-		return "", errors.New("token unrecognized")
+		return nil, errors.New("token unrecognized")
 	}
 }

@@ -51,6 +51,11 @@ type ComplexityRoot struct {
 		ID          func(childComplexity int) int
 	}
 
+	LoginReturn struct {
+		Token func(childComplexity int) int
+		User  func(childComplexity int) int
+	}
+
 	Mutation struct {
 		CreateInvoice func(childComplexity int, input model.NewInvoice) int
 		CreateUser    func(childComplexity int, input model.NewUser) int
@@ -67,11 +72,10 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		GetInvoice        func(childComplexity int, id string) int
-		InvoiceFilter     func(childComplexity int, dateCreated string) int
-		Invoices          func(childComplexity int) int
-		PaginatedInvoices func(childComplexity int, page int) int
-		Users             func(childComplexity int) int
+		GetInvoice    func(childComplexity int, id string) int
+		InvoiceFilter func(childComplexity int, dateCreated string) int
+		Invoices      func(childComplexity int, page int) int
+		Users         func(childComplexity int) int
 	}
 
 	User struct {
@@ -85,17 +89,16 @@ type ComplexityRoot struct {
 type MutationResolver interface {
 	CreateInvoice(ctx context.Context, input model.NewInvoice) (*model.Invoice, error)
 	UpdateInvoice(ctx context.Context, input model.InvoiceInput) (*model.Invoice, error)
-	Login(ctx context.Context, input model.Login) (string, error)
-	VerifyToken(ctx context.Context, input model.VerifyToken) (string, error)
+	Login(ctx context.Context, input model.Login) (*model.LoginReturn, error)
+	VerifyToken(ctx context.Context, input model.VerifyToken) (*model.User, error)
 	CreateUser(ctx context.Context, input model.NewUser) (*model.User, error)
 	FindUserByID(ctx context.Context, input string) (*model.User, error)
 	UpdateUser(ctx context.Context, input model.UpdateUser) (*model.User, error)
 }
 type QueryResolver interface {
-	Invoices(ctx context.Context) ([]*model.Invoice, error)
+	Invoices(ctx context.Context, page int) (*model.PaginatedInvoicesReturn, error)
 	Users(ctx context.Context) ([]*model.User, error)
 	InvoiceFilter(ctx context.Context, dateCreated string) ([]*model.Invoice, error)
-	PaginatedInvoices(ctx context.Context, page int) (*model.PaginatedInvoicesReturn, error)
 	GetInvoice(ctx context.Context, id string) (*model.Invoice, error)
 }
 
@@ -148,6 +151,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Invoice.ID(childComplexity), true
+
+	case "LoginReturn.token":
+		if e.complexity.LoginReturn.Token == nil {
+			break
+		}
+
+		return e.complexity.LoginReturn.Token(childComplexity), true
+
+	case "LoginReturn.user":
+		if e.complexity.LoginReturn.User == nil {
+			break
+		}
+
+		return e.complexity.LoginReturn.User(childComplexity), true
 
 	case "Mutation.createInvoice":
 		if e.complexity.Mutation.CreateInvoice == nil {
@@ -276,19 +293,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Query.Invoices(childComplexity), true
-
-	case "Query.paginatedInvoices":
-		if e.complexity.Query.PaginatedInvoices == nil {
-			break
-		}
-
-		args, err := ec.field_Query_paginatedInvoices_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_invoices_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Query.PaginatedInvoices(childComplexity, args["Page"].(int)), true
+		return e.complexity.Query.Invoices(childComplexity, args["Page"].(int)), true
 
 	case "Query.users":
 		if e.complexity.Query.Users == nil {
@@ -422,10 +432,9 @@ type PaginatedInvoicesReturn {
 }
 
 type Query {
-  invoices: [Invoice!]!
+  invoices(Page: Int!): PaginatedInvoicesReturn!
   users: [User!]!
   invoiceFilter(DateCreated: String!): [Invoice]
-  paginatedInvoices(Page: Int!): PaginatedInvoicesReturn!
   getInvoice(id: String!): Invoice!
 }
 
@@ -440,6 +449,11 @@ input NewInvoice {
 input Login {
     email: String!
     password: String!
+}
+
+type LoginReturn {
+    user: User!
+    token: String!
 }
 
 input NewUser {
@@ -470,8 +484,8 @@ type Mutation {
   createInvoice(input: NewInvoice!): Invoice!
   updateInvoice(input: InvoiceInput!): Invoice!
 
-  login(input: Login!): String!
-  verifyToken(input: VerifyToken!): String!
+  login(input: Login!): LoginReturn!
+  verifyToken(input: VerifyToken!): User!
 
   createUser(input: NewUser!): User!
   findUserById(input: String!): User!
@@ -636,7 +650,7 @@ func (ec *executionContext) field_Query_invoiceFilter_args(ctx context.Context, 
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_paginatedInvoices_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_invoices_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 int
@@ -864,6 +878,76 @@ func (ec *executionContext) _Invoice_Amount(ctx context.Context, field graphql.C
 	return ec.marshalNFloat2float64(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _LoginReturn_user(ctx context.Context, field graphql.CollectedField, obj *model.LoginReturn) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "LoginReturn",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖksemillaᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _LoginReturn_token(ctx context.Context, field graphql.CollectedField, obj *model.LoginReturn) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "LoginReturn",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Token, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_createInvoice(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -985,9 +1069,9 @@ func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.C
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*model.LoginReturn)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNLoginReturn2ᚖksemillaᚋgraphᚋmodelᚐLoginReturn(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_verifyToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1027,9 +1111,9 @@ func (ec *executionContext) _Mutation_verifyToken(ctx context.Context, field gra
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖksemillaᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_createUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1244,9 +1328,16 @@ func (ec *executionContext) _Query_invoices(ctx context.Context, field graphql.C
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_invoices_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Invoices(rctx)
+		return ec.resolvers.Query().Invoices(rctx, args["Page"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1258,9 +1349,9 @@ func (ec *executionContext) _Query_invoices(ctx context.Context, field graphql.C
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Invoice)
+	res := resTmp.(*model.PaginatedInvoicesReturn)
 	fc.Result = res
-	return ec.marshalNInvoice2ᚕᚖksemillaᚋgraphᚋmodelᚐInvoiceᚄ(ctx, field.Selections, res)
+	return ec.marshalNPaginatedInvoicesReturn2ᚖksemillaᚋgraphᚋmodelᚐPaginatedInvoicesReturn(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_users(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1335,48 +1426,6 @@ func (ec *executionContext) _Query_invoiceFilter(ctx context.Context, field grap
 	res := resTmp.([]*model.Invoice)
 	fc.Result = res
 	return ec.marshalOInvoice2ᚕᚖksemillaᚋgraphᚋmodelᚐInvoice(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Query_paginatedInvoices(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_paginatedInvoices_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().PaginatedInvoices(rctx, args["Page"].(int))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.PaginatedInvoicesReturn)
-	fc.Result = res
-	return ec.marshalNPaginatedInvoicesReturn2ᚖksemillaᚋgraphᚋmodelᚐPaginatedInvoicesReturn(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_getInvoice(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3122,6 +3171,47 @@ func (ec *executionContext) _Invoice(ctx context.Context, sel ast.SelectionSet, 
 	return out
 }
 
+var loginReturnImplementors = []string{"LoginReturn"}
+
+func (ec *executionContext) _LoginReturn(ctx context.Context, sel ast.SelectionSet, obj *model.LoginReturn) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, loginReturnImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("LoginReturn")
+		case "user":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._LoginReturn_user(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "token":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._LoginReturn_token(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -3338,29 +3428,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_invoiceFilter(ctx, field)
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
-			}
-
-			out.Concurrently(i, func() graphql.Marshaler {
-				return rrm(innerCtx)
-			})
-		case "paginatedInvoices":
-			field := field
-
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_paginatedInvoices(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
 				return res
 			}
 
@@ -4015,6 +4082,20 @@ func (ec *executionContext) unmarshalNInvoiceInput2ksemillaᚋgraphᚋmodelᚐIn
 func (ec *executionContext) unmarshalNLogin2ksemillaᚋgraphᚋmodelᚐLogin(ctx context.Context, v interface{}) (model.Login, error) {
 	res, err := ec.unmarshalInputLogin(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNLoginReturn2ksemillaᚋgraphᚋmodelᚐLoginReturn(ctx context.Context, sel ast.SelectionSet, v model.LoginReturn) graphql.Marshaler {
+	return ec._LoginReturn(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNLoginReturn2ᚖksemillaᚋgraphᚋmodelᚐLoginReturn(ctx context.Context, sel ast.SelectionSet, v *model.LoginReturn) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._LoginReturn(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNNewInvoice2ksemillaᚋgraphᚋmodelᚐNewInvoice(ctx context.Context, v interface{}) (model.NewInvoice, error) {

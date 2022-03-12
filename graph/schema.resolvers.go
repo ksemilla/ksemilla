@@ -30,6 +30,7 @@ func (r *mutationResolver) UpdateInvoice(ctx context.Context, input model.Invoic
 }
 
 func (r *mutationResolver) Login(ctx context.Context, input model.Login) (*model.LoginReturn, error) {
+	fmt.Println("xxx")
 	return db.Login(&input)
 }
 
@@ -81,15 +82,6 @@ func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
 	return db.AllUsers(), nil
 }
 
-func (r *queryResolver) InvoiceFilter(ctx context.Context, dateCreated string) ([]*model.Invoice, error) {
-	err := GetUserPermission(ctx, []string{OWNER})
-	if err != nil {
-		return nil, err
-	}
-	res := db.PaginatedInvoice(dateCreated)
-	return res, nil
-}
-
 func (r *queryResolver) GetInvoice(ctx context.Context, id string) (*model.Invoice, error) {
 	err := GetUserPermission(ctx, []string{OWNER, ACCT})
 	if err != nil {
@@ -113,6 +105,15 @@ type queryResolver struct{ *Resolver }
 //  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
 //    it when you're done.
 //  - You have helper methods in this file. Move them out to keep these resolver files clean.
+
+// func (r *queryResolver) InvoiceFilter(ctx context.Context, dateCreated string) ([]*model.Invoice, error) {
+// 	err := GetUserPermission(ctx, []string{OWNER})
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	res := db.PaginatedInvoice(dateCreated)
+// 	return res, nil
+// }
 
 var OWNER = "owner"
 var ACCT = "acct"

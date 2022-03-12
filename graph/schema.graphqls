@@ -33,7 +33,6 @@ type PaginatedInvoicesReturn {
 type Query {
   invoices(Page: Int!): PaginatedInvoicesReturn!
   users: [User!]!
-  invoiceFilter(DateCreated: String!): [Invoice]
   getInvoice(id: String!): Invoice!
 }
 

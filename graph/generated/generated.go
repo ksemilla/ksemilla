@@ -72,10 +72,9 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		GetInvoice    func(childComplexity int, id string) int
-		InvoiceFilter func(childComplexity int, dateCreated string) int
-		Invoices      func(childComplexity int, page int) int
-		Users         func(childComplexity int) int
+		GetInvoice func(childComplexity int, id string) int
+		Invoices   func(childComplexity int, page int) int
+		Users      func(childComplexity int) int
 	}
 
 	User struct {
@@ -98,7 +97,6 @@ type MutationResolver interface {
 type QueryResolver interface {
 	Invoices(ctx context.Context, page int) (*model.PaginatedInvoicesReturn, error)
 	Users(ctx context.Context) ([]*model.User, error)
-	InvoiceFilter(ctx context.Context, dateCreated string) ([]*model.Invoice, error)
 	GetInvoice(ctx context.Context, id string) (*model.Invoice, error)
 }
 
@@ -276,18 +274,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.GetInvoice(childComplexity, args["id"].(string)), true
 
-	case "Query.invoiceFilter":
-		if e.complexity.Query.InvoiceFilter == nil {
-			break
-		}
-
-		args, err := ec.field_Query_invoiceFilter_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.InvoiceFilter(childComplexity, args["DateCreated"].(string)), true
-
 	case "Query.invoices":
 		if e.complexity.Query.Invoices == nil {
 			break
@@ -434,7 +420,6 @@ type PaginatedInvoicesReturn {
 type Query {
   invoices(Page: Int!): PaginatedInvoicesReturn!
   users: [User!]!
-  invoiceFilter(DateCreated: String!): [Invoice]
   getInvoice(id: String!): Invoice!
 }
 
@@ -632,21 +617,6 @@ func (ec *executionContext) field_Query_getInvoice_args(ctx context.Context, raw
 		}
 	}
 	args["id"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_invoiceFilter_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["DateCreated"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("DateCreated"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["DateCreated"] = arg0
 	return args, nil
 }
 
@@ -1387,45 +1357,6 @@ func (ec *executionContext) _Query_users(ctx context.Context, field graphql.Coll
 	res := resTmp.([]*model.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚕᚖksemillaᚋgraphᚋmodelᚐUserᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Query_invoiceFilter(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_invoiceFilter_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().InvoiceFilter(rctx, args["DateCreated"].(string))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.([]*model.Invoice)
-	fc.Result = res
-	return ec.marshalOInvoice2ᚕᚖksemillaᚋgraphᚋmodelᚐInvoice(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_getInvoice(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3418,26 +3349,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Concurrently(i, func() graphql.Marshaler {
 				return rrm(innerCtx)
 			})
-		case "invoiceFilter":
-			field := field
-
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_invoiceFilter(ctx, field)
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
-			}
-
-			out.Concurrently(i, func() graphql.Marshaler {
-				return rrm(innerCtx)
-			})
 		case "getInvoice":
 			field := field
 
@@ -4498,54 +4409,6 @@ func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel as
 	}
 	res := graphql.MarshalFloatContext(*v)
 	return graphql.WrapContextMarshaler(ctx, res)
-}
-
-func (ec *executionContext) marshalOInvoice2ᚕᚖksemillaᚋgraphᚋmodelᚐInvoice(ctx context.Context, sel ast.SelectionSet, v []*model.Invoice) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOInvoice2ᚖksemillaᚋgraphᚋmodelᚐInvoice(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	return ret
-}
-
-func (ec *executionContext) marshalOInvoice2ᚖksemillaᚋgraphᚋmodelᚐInvoice(ctx context.Context, sel ast.SelectionSet, v *model.Invoice) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._Invoice(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

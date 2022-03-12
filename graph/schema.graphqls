@@ -81,6 +81,7 @@ input InvoiceInput {
 type Mutation {
   createInvoice(input: NewInvoice!): Invoice!
   updateInvoice(input: InvoiceInput!): Invoice!
+  deleteInvoice(id: String!): String
 
   login(input: Login!): LoginReturn!
   verifyToken(input: VerifyToken!): User!

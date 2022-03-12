@@ -59,6 +59,7 @@ type ComplexityRoot struct {
 	Mutation struct {
 		CreateInvoice func(childComplexity int, input model.NewInvoice) int
 		CreateUser    func(childComplexity int, input model.NewUser) int
+		DeleteInvoice func(childComplexity int, id string) int
 		FindUserByID  func(childComplexity int, input string) int
 		Login         func(childComplexity int, input model.Login) int
 		UpdateInvoice func(childComplexity int, input model.InvoiceInput) int
@@ -88,6 +89,7 @@ type ComplexityRoot struct {
 type MutationResolver interface {
 	CreateInvoice(ctx context.Context, input model.NewInvoice) (*model.Invoice, error)
 	UpdateInvoice(ctx context.Context, input model.InvoiceInput) (*model.Invoice, error)
+	DeleteInvoice(ctx context.Context, id string) (*string, error)
 	Login(ctx context.Context, input model.Login) (*model.LoginReturn, error)
 	VerifyToken(ctx context.Context, input model.VerifyToken) (*model.User, error)
 	CreateUser(ctx context.Context, input model.NewUser) (*model.User, error)
@@ -187,6 +189,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateUser(childComplexity, args["input"].(model.NewUser)), true
+
+	case "Mutation.deleteInvoice":
+		if e.complexity.Mutation.DeleteInvoice == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteInvoice_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteInvoice(childComplexity, args["id"].(string)), true
 
 	case "Mutation.findUserById":
 		if e.complexity.Mutation.FindUserByID == nil {
@@ -468,6 +482,7 @@ input InvoiceInput {
 type Mutation {
   createInvoice(input: NewInvoice!): Invoice!
   updateInvoice(input: InvoiceInput!): Invoice!
+  deleteInvoice(id: String!): String
 
   login(input: Login!): LoginReturn!
   verifyToken(input: VerifyToken!): User!
@@ -512,6 +527,21 @@ func (ec *executionContext) field_Mutation_createUser_args(ctx context.Context, 
 		}
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteInvoice_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -1000,6 +1030,45 @@ func (ec *executionContext) _Mutation_updateInvoice(ctx context.Context, field g
 	res := resTmp.(*model.Invoice)
 	fc.Result = res
 	return ec.marshalNInvoice2ᚖksemillaᚋgraphᚋmodelᚐInvoice(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deleteInvoice(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deleteInvoice_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteInvoice(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3182,6 +3251,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "deleteInvoice":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteInvoice(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
 		case "login":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_login(ctx, field)

@@ -51,3 +51,21 @@ func (db *DB) FindOneUser(_id string) (*model.User, error) {
 	}
 	return &user, nil
 }
+
+func (db *DB) CreateUser(input *model.NewUser) *model.User {
+	collection := db.client.Database("ksemilla").Collection("users")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	hash, _ := HashPassword(input.Password)
+	input.Password = hash
+
+	res, err := collection.InsertOne(ctx, input)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return &model.User{
+		ID:    res.InsertedID.(primitive.ObjectID).Hex(),
+		Email: input.Email,
+	}
+}

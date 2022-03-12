@@ -12,10 +12,11 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func (db *DB) Save(input *model.NewInvoice) *model.Invoice {
+func (db *DB) CreateInvoice(input *model.NewInvoice) *model.Invoice {
 	collection := db.client.Database("ksemilla").Collection("invoices")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -139,20 +140,13 @@ func (db *DB) UpdateInvoice(input *model.InvoiceInput) *model.Invoice {
 	return &invoice
 }
 
-func (db *DB) CreateUser(input *model.NewUser) *model.User {
-	collection := db.client.Database("ksemilla").Collection("users")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func (db *DB) DeleteInvoice(id string) *mongo.DeleteResult {
+	collection := db.client.Database("ksemilla").Collection("invoices")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	hash, _ := HashPassword(input.Password)
-	input.Password = hash
-
-	res, err := collection.InsertOne(ctx, input)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return &model.User{
-		ID:    res.InsertedID.(primitive.ObjectID).Hex(),
-		Email: input.Email,
-	}
+	ObjectID, _ := primitive.ObjectIDFromHex(id)
+	filter := bson.M{"_id": ObjectID}
+	res, _ := collection.DeleteOne(ctx, filter)
+	return res
 }

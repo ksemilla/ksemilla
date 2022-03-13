@@ -1,0 +1,22 @@
+name: ksemilla deploy
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: SSH connect
+    runs-on: ubuntu-latest
+    steps:
+    - name: executing remote ssh commands
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.KSEMILLA_HOST }}
+        username: ${{ secrets.KSEMILLA_USERNAME }}
+        key: ${{ secrets.KSEMILLA_KEY }}
+        port: ${{ secrets.KSEMILLA_PORT }}
+        script: |
+          cd ksemilla
+          whoami

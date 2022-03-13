@@ -19,7 +19,7 @@ jobs:
         port: ${{ secrets.KSEMILLA_PORT }}
         script: |
           cd ksemilla
-          sudo ls
+          ls
           git stash
           git stash clear
           git pull

@@ -20,4 +20,6 @@ jobs:
         script: |
           cd ksemilla
           ls
+          git stash
+          git stash clear
           git pull

@@ -127,3 +127,19 @@ func (db *DB) UpdateUser(input *model.UpdateUser) *model.User {
 
 	return &user
 }
+
+func (db *DB) DeleteUser(id string) (bool, error) {
+	collection := db.client.Database("ksemilla").Collection("users")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	ObjectID, _ := primitive.ObjectIDFromHex(id)
+	filter := bson.M{"_id": ObjectID}
+	_, err := collection.DeleteOne(ctx, filter)
+
+	if err != nil {
+		return false, errors.New("something went wrong")
+	} else {
+		return true, nil
+	}
+}

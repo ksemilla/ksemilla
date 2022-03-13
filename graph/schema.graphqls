@@ -96,4 +96,5 @@ type Mutation {
   findUserById(input: String!): User!
   updateUser(input: UpdateUser!): User!
   changePassword(input: ChangePassword!): Boolean!
+  deleteUser(id: String!): Boolean!
 }

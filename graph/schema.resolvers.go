@@ -84,6 +84,14 @@ func (r *mutationResolver) ChangePassword(ctx context.Context, input model.Chang
 	return db.ChangePassword(&input)
 }
 
+func (r *mutationResolver) DeleteUser(ctx context.Context, id string) (bool, error) {
+	err := GetUserPermission(ctx, []string{OWNER})
+	if err != nil {
+		return false, err
+	}
+	return db.DeleteUser(id)
+}
+
 func (r *queryResolver) Invoices(ctx context.Context, page int) (*model.PaginatedInvoicesReturn, error) {
 	err := GetUserPermission(ctx, []string{OWNER, ACCT})
 	if err != nil {

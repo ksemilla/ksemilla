@@ -24,6 +24,6 @@ jobs:
           git stash clear
           git pull
           go build server.go
-          sudo systemctyl restart goweb
+          sudo systemctl restart goweb
           sudo systemctl daemon-reload
           sudo systemctl restart nginx

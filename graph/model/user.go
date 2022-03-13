@@ -10,4 +10,11 @@ type User struct {
 type NewUser struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	Role     string `json:"role"`
+}
+
+type UpdateUser struct {
+	ID    string `json:"id"`
+	Email string `json:"email"`
+	Role  string `json:"role"`
 }

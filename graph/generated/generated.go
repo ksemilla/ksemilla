@@ -57,14 +57,15 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateInvoice func(childComplexity int, input model.NewInvoice) int
-		CreateUser    func(childComplexity int, input model.NewUser) int
-		DeleteInvoice func(childComplexity int, id string) int
-		FindUserByID  func(childComplexity int, input string) int
-		Login         func(childComplexity int, input model.Login) int
-		UpdateInvoice func(childComplexity int, input model.InvoiceInput) int
-		UpdateUser    func(childComplexity int, input model.UpdateUser) int
-		VerifyToken   func(childComplexity int, input model.VerifyToken) int
+		ChangePassword func(childComplexity int, input model.ChangePassword) int
+		CreateInvoice  func(childComplexity int, input model.NewInvoice) int
+		CreateUser     func(childComplexity int, input model.NewUser) int
+		DeleteInvoice  func(childComplexity int, id string) int
+		FindUserByID   func(childComplexity int, input string) int
+		Login          func(childComplexity int, input model.Login) int
+		UpdateInvoice  func(childComplexity int, input model.InvoiceInput) int
+		UpdateUser     func(childComplexity int, input model.UpdateUser) int
+		VerifyToken    func(childComplexity int, input model.VerifyToken) int
 	}
 
 	PaginatedInvoicesReturn struct {
@@ -74,6 +75,7 @@ type ComplexityRoot struct {
 
 	Query struct {
 		GetInvoice func(childComplexity int, id string) int
+		GetUser    func(childComplexity int, id string) int
 		Invoices   func(childComplexity int, page int) int
 		Users      func(childComplexity int) int
 	}
@@ -95,11 +97,13 @@ type MutationResolver interface {
 	CreateUser(ctx context.Context, input model.NewUser) (*model.User, error)
 	FindUserByID(ctx context.Context, input string) (*model.User, error)
 	UpdateUser(ctx context.Context, input model.UpdateUser) (*model.User, error)
+	ChangePassword(ctx context.Context, input model.ChangePassword) (bool, error)
 }
 type QueryResolver interface {
 	Invoices(ctx context.Context, page int) (*model.PaginatedInvoicesReturn, error)
 	Users(ctx context.Context) ([]*model.User, error)
 	GetInvoice(ctx context.Context, id string) (*model.Invoice, error)
+	GetUser(ctx context.Context, id string) (*model.User, error)
 }
 
 type executableSchema struct {
@@ -165,6 +169,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.LoginReturn.User(childComplexity), true
+
+	case "Mutation.changePassword":
+		if e.complexity.Mutation.ChangePassword == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_changePassword_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ChangePassword(childComplexity, args["input"].(model.ChangePassword)), true
 
 	case "Mutation.createInvoice":
 		if e.complexity.Mutation.CreateInvoice == nil {
@@ -288,6 +304,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.GetInvoice(childComplexity, args["id"].(string)), true
 
+	case "Query.getUser":
+		if e.complexity.Query.GetUser == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetUser(childComplexity, args["id"].(string)), true
+
 	case "Query.invoices":
 		if e.complexity.Query.Invoices == nil {
 			break
@@ -410,6 +438,12 @@ type User {
   role: String!
 }
 
+input UpdateUser {
+  id: String!
+  email: String!
+  role: String!
+}
+
 type Invoice {
 	id: String!
 	DateCreated: String!
@@ -419,22 +453,23 @@ type Invoice {
 }
 
 input InvoiceFilterInput {
-    id: String
-    DateCreated: String
-    From: String
-    Address: String
-    Amount: Float
+  id: String
+  DateCreated: String
+  From: String
+  Address: String
+  Amount: Float
 }
 
 type PaginatedInvoicesReturn {
-    data: [Invoice!]!
-    total: Int!
+  data: [Invoice!]!
+  total: Int!
 }
 
 type Query {
   invoices(Page: Int!): PaginatedInvoicesReturn!
   users: [User!]!
   getInvoice(id: String!): Invoice!
+  getUser(id: String!): User!
 }
 
 
@@ -457,14 +492,8 @@ type LoginReturn {
 
 input NewUser {
     email: String!
-    password: String!
-}
-
-input UpdateUser {
-    id: ID!
-  email: String!
-  password: String!
-  role: String!
+    role: String!
+    password: String
 }
 
 input VerifyToken {
@@ -479,6 +508,11 @@ input InvoiceInput {
     Amount: Float!
 }
 
+input ChangePassword {
+    id: String!
+    password: String!
+}
+
 type Mutation {
   createInvoice(input: NewInvoice!): Invoice!
   updateInvoice(input: InvoiceInput!): Invoice!
@@ -490,7 +524,7 @@ type Mutation {
   createUser(input: NewUser!): User!
   findUserById(input: String!): User!
   updateUser(input: UpdateUser!): User!
-  
+  changePassword(input: ChangePassword!): Boolean!
 }
 `, BuiltIn: false},
 }
@@ -499,6 +533,21 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_changePassword_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.ChangePassword
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNChangePassword2ksemillaᚋgraphᚋmodelᚐChangePassword(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_createInvoice_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -636,6 +685,21 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 }
 
 func (ec *executionContext) field_Query_getInvoice_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_getUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -1281,6 +1345,48 @@ func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field grap
 	return ec.marshalNUser2ᚖksemillaᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_changePassword(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_changePassword_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ChangePassword(rctx, args["input"].(model.ChangePassword))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _PaginatedInvoicesReturn_data(ctx context.Context, field graphql.CollectedField, obj *model.PaginatedInvoicesReturn) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -1468,6 +1574,48 @@ func (ec *executionContext) _Query_getInvoice(ctx context.Context, field graphql
 	res := resTmp.(*model.Invoice)
 	fc.Result = res
 	return ec.marshalNInvoice2ᚖksemillaᚋgraphᚋmodelᚐInvoice(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_getUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_getUser_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetUser(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖksemillaᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2803,6 +2951,37 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputChangePassword(ctx context.Context, obj interface{}) (model.ChangePassword, error) {
+	var it model.ChangePassword
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "password":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+			it.Password, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputInvoiceFilterInput(ctx context.Context, obj interface{}) (model.InvoiceFilterInput, error) {
 	var it model.InvoiceFilterInput
 	asMap := map[string]interface{}{}
@@ -3008,11 +3187,19 @@ func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj inter
 			if err != nil {
 				return it, err
 			}
+		case "role":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("role"))
+			it.Role, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "password":
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
-			it.Password, err = ec.unmarshalNString2string(ctx, v)
+			it.Password, err = ec.unmarshalOString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3035,7 +3222,7 @@ func (ec *executionContext) unmarshalInputUpdateUser(ctx context.Context, obj in
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-			it.ID, err = ec.unmarshalNID2string(ctx, v)
+			it.ID, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3044,14 +3231,6 @@ func (ec *executionContext) unmarshalInputUpdateUser(ctx context.Context, obj in
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
 			it.Email, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "password":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
-			it.Password, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3308,6 +3487,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "changePassword":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_changePassword(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3435,6 +3624,29 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_getInvoice(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "getUser":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getUser(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -3956,6 +4168,11 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNChangePassword2ksemillaᚋgraphᚋmodelᚐChangePassword(ctx context.Context, v interface{}) (model.ChangePassword, error) {
+	res, err := ec.unmarshalInputChangePassword(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v interface{}) (float64, error) {

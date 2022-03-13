@@ -6,7 +6,6 @@ package graph
 import (
 	"context"
 	"errors"
-	"fmt"
 	"ksemilla/database"
 	"ksemilla/graph/generated"
 	"ksemilla/graph/model"
@@ -57,7 +56,8 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 	if err != nil {
 		return nil, err
 	}
-	return db.CreateUser(&input), nil
+
+	return db.CreateUser(&input)
 }
 
 func (r *mutationResolver) FindUserByID(ctx context.Context, input string) (*model.User, error) {
@@ -73,7 +73,15 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUse
 	if err != nil {
 		return nil, err
 	}
-	panic(fmt.Errorf("not implemented"))
+	return db.UpdateUser(&input), nil
+}
+
+func (r *mutationResolver) ChangePassword(ctx context.Context, input model.ChangePassword) (bool, error) {
+	err := GetUserPermission(ctx, []string{OWNER})
+	if err != nil {
+		return false, err
+	}
+	return db.ChangePassword(&input)
 }
 
 func (r *queryResolver) Invoices(ctx context.Context, page int) (*model.PaginatedInvoicesReturn, error) {
@@ -104,6 +112,14 @@ func (r *queryResolver) GetInvoice(ctx context.Context, id string) (*model.Invoi
 	return db.GetInvoice(id), nil
 }
 
+func (r *queryResolver) GetUser(ctx context.Context, id string) (*model.User, error) {
+	err := GetUserPermission(ctx, []string{OWNER})
+	if err != nil {
+		return nil, err
+	}
+	return db.GetUser(id), nil
+}
+
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
@@ -130,7 +146,6 @@ func contains(s []string, str string) bool {
 	}
 	return false
 }
-
 func GetUserPermission(ctx context.Context, role []string) error {
 	user := ctx.Value(middlewares.GetUserCtx())
 

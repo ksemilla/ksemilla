@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"reflect"
 	"time"
 
 	"ksemilla/graph/model"
@@ -120,13 +119,11 @@ func (db *DB) UpdateInvoice(input *model.InvoiceInput) *model.Invoice {
 			{"Amount", input.Amount},
 		},
 	}}
-	res, err := collection.UpdateOne(ctx, filter, update)
-	fmt.Println(res, err, reflect.TypeOf(res))
+	_, err := collection.UpdateOne(ctx, filter, update)
 	invoice := model.Invoice{}
 	// res.Decode(&invoice)
 
 	jsonbody, err := json.Marshal(*input)
-	fmt.Println(jsonbody)
 	if err != nil {
 		log.Fatal(err)
 	}

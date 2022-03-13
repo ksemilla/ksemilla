@@ -9,6 +9,12 @@ type User {
   role: String!
 }
 
+input UpdateUser {
+  id: String!
+  email: String!
+  role: String!
+}
+
 type Invoice {
 	id: String!
 	DateCreated: String!
@@ -18,22 +24,23 @@ type Invoice {
 }
 
 input InvoiceFilterInput {
-    id: String
-    DateCreated: String
-    From: String
-    Address: String
-    Amount: Float
+  id: String
+  DateCreated: String
+  From: String
+  Address: String
+  Amount: Float
 }
 
 type PaginatedInvoicesReturn {
-    data: [Invoice!]!
-    total: Int!
+  data: [Invoice!]!
+  total: Int!
 }
 
 type Query {
   invoices(Page: Int!): PaginatedInvoicesReturn!
   users: [User!]!
   getInvoice(id: String!): Invoice!
+  getUser(id: String!): User!
 }
 
 
@@ -56,14 +63,8 @@ type LoginReturn {
 
 input NewUser {
     email: String!
-    password: String!
-}
-
-input UpdateUser {
-    id: ID!
-  email: String!
-  password: String!
-  role: String!
+    role: String!
+    password: String
 }
 
 input VerifyToken {
@@ -78,6 +79,11 @@ input InvoiceInput {
     Amount: Float!
 }
 
+input ChangePassword {
+    id: String!
+    password: String!
+}
+
 type Mutation {
   createInvoice(input: NewInvoice!): Invoice!
   updateInvoice(input: InvoiceInput!): Invoice!
@@ -89,5 +95,5 @@ type Mutation {
   createUser(input: NewUser!): User!
   findUserById(input: String!): User!
   updateUser(input: UpdateUser!): User!
-  
+  changePassword(input: ChangePassword!): Boolean!
 }

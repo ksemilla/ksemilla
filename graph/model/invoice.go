@@ -14,3 +14,24 @@ type NewInvoice struct {
 	Address     string  `json:"address"`
 	Amount      float64 `json:"amount"`
 }
+
+type InvoiceFilterInput struct {
+	ID          *string  `json:"id"`
+	DateCreated *string  `json:"DateCreated"`
+	From        *string  `json:"From"`
+	Address     *string  `json:"Address"`
+	Amount      *float64 `json:"Amount"`
+}
+
+type InvoiceInput struct {
+	ID          string  `json:"id"`
+	DateCreated string  `json:"DateCreated"`
+	From        string  `json:"From"`
+	Address     string  `json:"Address"`
+	Amount      float64 `json:"Amount"`
+}
+
+type PaginatedInvoicesReturn struct {
+	Data  []*Invoice `json:"data"`
+	Total int        `json:"total"`
+}

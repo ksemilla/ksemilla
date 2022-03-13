@@ -116,3 +116,28 @@ func (db *DB) VerifyToken(input *model.VerifyToken) (*model.User, error) {
 		return nil, errors.New("token unrecognized")
 	}
 }
+
+func (db *DB) ChangePassword(input *model.ChangePassword) (bool, error) {
+	collection := db.client.Database("ksemilla").Collection("users")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	ObjectID, _ := primitive.ObjectIDFromHex(input.ID)
+	filter := bson.M{"_id": ObjectID}
+
+	hash, _ := HashPassword(input.Password)
+
+	update := bson.D{{"$set",
+		bson.D{
+			{"password", hash},
+		},
+	}}
+	res, err := collection.UpdateOne(ctx, filter, update)
+	fmt.Println(res, err, input.Password)
+
+	if err != nil {
+		return false, errors.New("something went wrong")
+	} else {
+		return true, nil
+	}
+}

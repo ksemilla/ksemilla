@@ -25,5 +25,3 @@ jobs:
           git pull
           go build server.go
           sudo systemctl restart goweb
-          sudo systemctl daemon-reload
-          sudo systemctl restart nginx

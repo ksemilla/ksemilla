@@ -99,7 +99,7 @@ type MutationResolver interface {
 	FindUserByID(ctx context.Context, input string) (*model.User, error)
 	UpdateUser(ctx context.Context, input model.UpdateUser) (*model.User, error)
 	ChangePassword(ctx context.Context, input model.ChangePassword) (bool, error)
-	DeleteUser(ctx context.Context, id string) (bool, error)
+	DeleteUser(ctx context.Context, id string) (*string, error)
 }
 type QueryResolver interface {
 	Invoices(ctx context.Context, page int) (*model.PaginatedInvoicesReturn, error)
@@ -539,7 +539,7 @@ type Mutation {
   findUserById(input: String!): User!
   updateUser(input: UpdateUser!): User!
   changePassword(input: ChangePassword!): Boolean!
-  deleteUser(id: String!): Boolean!
+  deleteUser(id: String!): String
 }
 `, BuiltIn: false},
 }
@@ -1449,14 +1449,11 @@ func (ec *executionContext) _Mutation_deleteUser(ctx context.Context, field grap
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(bool)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _PaginatedInvoicesReturn_data(ctx context.Context, field graphql.CollectedField, obj *model.PaginatedInvoicesReturn) (ret graphql.Marshaler) {
@@ -3576,9 +3573,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
 
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
